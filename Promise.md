@@ -546,8 +546,108 @@ Convert JSON
 Use Data
      ↓
 Handle Errors
+-----
+response.json() is a method used with the Fetch API to read the response body and convert JSON text into a JavaScript object.
 
+Example:
 
+fetch("https://jsonplaceholder.typicode.com/users/1")
+  .then(response => response.json())
+  .then(data => {
+    console.log(data);
+  });
+
+Suppose the server returns:
+
+{
+  "id": 1,
+  "name": "Leanne Graham"
+}
+
+Here's what happens:
+
+Step 1: Fetch request
+
+fetch(url)
+
+Returns a Promise that resolves to a Response object.
+
+Step 2: Get the response
+
+.then(response => response.json())
+
+The response contains metadata and the raw body.
+
+console.log(response);
+
+Might show:
+
+Response {
+  status: 200,
+  ok: true,
+  body: ReadableStream
+}
+
+The body is still raw data.
+
+Step 3: Parse JSON
+
+response.json()
+
+Reads the body and converts:
+
+{"id":1,"name":"Leanne Graham"}
+
+into:
+
+{
+  id: 1,
+  name: "Leanne Graham"
+}
+
+Step 4: Use the JavaScript object
+
+.then(data => {
+  console.log(data.name);
+});
+
+Output:
+
+Leanne Graham
+
+Important
+
+response.json() itself returns a Promise because reading and parsing the response takes time.
+
+That's why we write:
+
+response.json().then(data => {
+  console.log(data);
+});
+
+or with async/await:
+
+const response = await fetch(url);
+const data = await response.json();
+
+console.log(data);
+
+Simple analogy
+
+Imagine the server sends a package:
+
+Server
+  ↓
+'{"name":"John","age":25}'   (JSON text)
+
+response.json() opens the package and converts it into:
+
+{
+  name: "John",
+  age: 25
+}
+
+which JavaScript can work with directly.
 ---
 
 Summary
