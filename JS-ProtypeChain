@@ -1,0 +1,69 @@
+Think of the prototype chain as JavaScript's way of saying:
+
+> "If an object doesn't have a property, ask its parent object."
+
+
+
+Example
+
+const animal = {
+  eats: true
+};
+
+const dog = {
+  barks: true
+};
+
+Object.setPrototypeOf(dog, animal);
+
+console.log(dog.barks); // true
+console.log(dog.eats);  // true
+
+How dog.eats works
+
+1. JavaScript looks for eats inside dog.
+
+{ barks: true }
+
+Not found ❌
+
+
+2. It follows the prototype link to animal.
+
+{ eats: true }
+
+Found ✅
+
+
+3. Returns true.
+
+
+
+Visual
+
+dog
+ ↓
+animal
+ ↓
+Object.prototype
+ ↓
+null
+
+Real-world analogy
+
+Imagine you ask your younger brother (dog) for a book.
+
+If he has it → he gives it.
+
+If not → he asks your father (animal).
+
+If father has it → you get it.
+
+Otherwise → "not found".
+
+
+That's exactly how the prototype chain works in JavaScript.
+
+One-line definition
+
+Prototype chain = the sequence of objects JavaScript searches through when a property or method is not found on the current object.
