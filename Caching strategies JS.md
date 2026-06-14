@@ -1191,3 +1191,657 @@ cache["user_1"] = user
 is general caching.
 
 Memoization is essentially a specialized form of caching focused on function outputs.
+
+
+All three are browser-side storage mechanisms, but they differ in capacity, lifetime, complexity, and use cases.
+
+Think of them as different types of storage available inside the browser:
+
+Browser Storage
+│
+├── localStorage
+├── sessionStorage
+└── IndexedDB
+
+
+---
+
+1. localStorage
+
+What is localStorage?
+
+localStorage is a simple key-value storage that persists even after the browser is closed and reopened.
+
+Data remains until:
+
+You explicitly remove it
+
+User clears browser data
+
+The website removes it
+
+
+
+---
+
+Characteristics
+
+Property	Value
+
+Storage Type	Key-Value
+Capacity	~5-10 MB
+Expiration	Never (until removed)
+Accessible From	Same origin
+Data Format	Strings only
+Synchronous	Yes
+
+
+
+---
+
+How It Works
+
+Store Data
+     ↓
+Close Browser
+     ↓
+Open Browser Again
+     ↓
+Data Still Exists
+
+
+---
+
+Example: Store User Preferences
+
+Save theme:
+
+localStorage.setItem("theme", "dark");
+
+Retrieve:
+
+const theme =
+  localStorage.getItem("theme");
+
+console.log(theme);
+
+Output:
+
+dark
+
+
+---
+
+Storing Objects
+
+localStorage only stores strings.
+
+Wrong:
+
+localStorage.setItem("user", {
+  name: "John"
+});
+
+Correct:
+
+const user = {
+  id: 1,
+  name: "John"
+};
+
+localStorage.setItem(
+  "user",
+  JSON.stringify(user)
+);
+
+Retrieve:
+
+const user =
+  JSON.parse(
+    localStorage.getItem("user")
+  );
+
+Result:
+
+{
+  id: 1,
+  name: "John"
+}
+
+
+---
+
+Remove Data
+
+Single item:
+
+localStorage.removeItem("theme");
+
+Everything:
+
+localStorage.clear();
+
+
+---
+
+Common Use Cases
+
+User Preferences
+
+Dark mode
+Language
+Font size
+
+Remember User Settings
+
+Sidebar state
+Layout selection
+Dashboard filters
+
+Small Cache
+
+Product categories
+Country list
+Configuration
+
+
+---
+
+Limitations
+
+Small Storage
+
+Usually:
+
+5-10 MB
+
+Strings Only
+
+Need:
+
+JSON.stringify()
+JSON.parse()
+
+Blocking Operations
+
+localStorage is synchronous.
+
+localStorage.getItem()
+
+blocks the main thread.
+
+For large data, this becomes slow.
+
+
+---
+
+2. sessionStorage
+
+What is sessionStorage?
+
+Almost identical to localStorage.
+
+The difference is:
+
+Data lives only for current tab session
+
+When the tab closes:
+
+sessionStorage cleared
+
+
+---
+
+Characteristics
+
+Property	Value
+
+Capacity	~5 MB
+Lifetime	Until tab closes
+Scope	Per browser tab
+Data Type	Strings
+Synchronous	Yes
+
+
+
+---
+
+Flow
+
+Open Tab
+↓
+Store Data
+↓
+Refresh Page
+↓
+Data Exists
+↓
+Close Tab
+↓
+Data Removed
+
+
+---
+
+Example
+
+Store form progress:
+
+sessionStorage.setItem(
+  "step",
+  "2"
+);
+
+Retrieve:
+
+const step =
+  sessionStorage.getItem("step");
+
+
+---
+
+Real-World Example
+
+Imagine a 5-step registration form.
+
+User completes:
+
+Step 1
+Step 2
+Step 3
+
+Store current progress:
+
+sessionStorage.setItem(
+  "currentStep",
+  "3"
+);
+
+If the page refreshes:
+
+Still on Step 3
+
+If tab closes:
+
+Start over
+
+
+---
+
+Common Use Cases
+
+Multi-Step Forms
+
+Checkout
+Registration
+Insurance forms
+
+Temporary State
+
+Current wizard step
+Selected filters
+Temporary tokens
+
+Page Navigation State
+
+Search results state
+Pagination
+Sort order
+
+
+---
+
+localStorage vs sessionStorage
+
+Feature	localStorage	sessionStorage
+
+Persists After Browser Close	Yes	No
+Persists After Refresh	Yes	Yes
+Shared Across Tabs	Yes	No
+Storage Size	~5-10 MB	~5 MB
+Expiration	Never	Tab Close
+
+
+
+---
+
+3. IndexedDB
+
+What is IndexedDB?
+
+IndexedDB is a full browser database.
+
+Unlike localStorage:
+
+Not just key-value strings
+
+It can store:
+
+Objects
+Arrays
+Files
+Images
+Videos
+Large datasets
+
+Think of it as:
+
+Mini NoSQL Database
+inside Browser
+
+
+---
+
+Characteristics
+
+Property	Value
+
+Storage	Database
+Capacity	Hundreds of MBs+
+Data Type	Structured Objects
+Async	Yes
+Indexed Queries	Yes
+Offline Support	Excellent
+
+
+
+---
+
+Why IndexedDB Exists
+
+Imagine storing:
+
+50,000 products
+100,000 messages
+Offline documents
+Images
+
+localStorage becomes inefficient.
+
+IndexedDB handles this easily.
+
+
+---
+
+IndexedDB Architecture
+
+Database
+   ↓
+Object Stores
+   ↓
+Records
+
+Similar to:
+
+Database
+ ↓
+Tables
+ ↓
+Rows
+
+in SQL.
+
+
+---
+
+Example
+
+Create Database
+
+const request =
+  indexedDB.open(
+    "MyDatabase",
+    1
+  );
+
+
+---
+
+Create Store
+
+request.onupgradeneeded =
+  function(event) {
+
+    const db =
+      event.target.result;
+
+    db.createObjectStore(
+      "users",
+      { keyPath: "id" }
+    );
+  };
+
+
+---
+
+Add Data
+
+const transaction =
+  db.transaction(
+    ["users"],
+    "readwrite"
+  );
+
+const store =
+  transaction.objectStore(
+    "users"
+  );
+
+store.add({
+  id: 1,
+  name: "John"
+});
+
+
+---
+
+Read Data
+
+const request =
+  store.get(1);
+
+request.onsuccess =
+  function() {
+    console.log(
+      request.result
+    );
+  };
+
+Output:
+
+{
+  id: 1,
+  name: "John"
+}
+
+
+---
+
+IndexedDB Flow
+
+Request Data
+      ↓
+Check IndexedDB
+      ↓
+Found?
+  ↙      ↘
+Yes      No
+ ↓        ↓
+Return   API Call
+Data      ↓
+          Save To DB
+             ↓
+          Return
+
+
+---
+
+Real-World Example: Offline Email App
+
+Imagine an email application.
+
+First launch:
+
+Download Emails
+↓
+Store in IndexedDB
+
+User goes offline:
+
+Open App
+↓
+Read Emails from IndexedDB
+↓
+Still Works
+
+This is how many offline-capable web applications function.
+
+
+---
+
+Common IndexedDB Use Cases
+
+Offline Applications
+
+Examples:
+
+Email clients
+
+Note-taking apps
+
+Document editors
+
+
+Large API Caches
+
+Products
+Orders
+Reports
+
+Media Storage
+
+Images
+Videos
+PDFs
+
+Progressive Web Apps (PWAs)
+
+Service Workers often use IndexedDB to store application data offline.
+
+
+---
+
+IndexedDB Libraries
+
+The native API is verbose, so developers often use wrappers:
+
+Dexie.js
+
+localForage
+
+idb
+
+
+Example with Dexie:
+
+const db = new Dexie("MyDB");
+
+db.version(1).stores({
+  users: "id,name"
+});
+
+await db.users.add({
+  id: 1,
+  name: "John"
+});
+
+Much simpler than the native API.
+
+
+---
+
+When to Use Which?
+
+Use localStorage
+
+When data is:
+
+Small
+
+Persistent
+
+Simple key-value
+
+
+Examples:
+
+Theme
+Language
+User preferences
+JWT (though secure cookies are often preferred)
+
+
+---
+
+Use sessionStorage
+
+When data is:
+
+Temporary
+
+Tab-specific
+
+
+Examples:
+
+Wizard progress
+Current page state
+Checkout flow
+
+
+---
+
+Use IndexedDB
+
+When data is:
+
+Large
+
+Structured
+
+Requires querying
+
+Needs offline support
+
+
+Examples:
+
+Products catalog
+Chat messages
+Offline documents
+Media files
+
+
+---
+
+Quick Comparison
+
+Feature	localStorage	sessionStorage	IndexedDB
+
+Data Type	Strings	Strings	Objects, Files, Arrays
+Capacity	~5-10 MB	~5 MB	Hundreds of MBs+
+Persistent	Yes	No	Yes
+Async	No	No	Yes
+Query Support	No	No	Yes
+Offline Storage	Limited	Limited	Excellent
+Performance for Large Data	Poor	Poor	Excellent
+Complexity	Very Easy	Very Easy	Moderate
+
+
+Rule of Thumb
+
+localStorage → "Remember this setting forever."
+
+sessionStorage → "Remember this only while the tab is open."
+
+IndexedDB → "Store a large amount of structured data like a real database."
