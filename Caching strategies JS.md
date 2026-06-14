@@ -683,3 +683,511 @@ Losing the cache on page refresh is acceptable.
 
 
 It is often the first layer of caching in modern React, Angular, and JavaScript applications, with additional layers such as browser cache, service worker cache, and server-side caches built on top of it.
+
+
+
+I think you mean memoization (a caching technique in programming), not memorization (remembering information).
+
+What is Memoization?
+
+Memoization is an optimization technique where the result of a function call is stored (cached) so that if the same inputs are provided again, the cached result is returned instead of recalculating it.
+
+Simple Idea
+
+Without memoization:
+
+square(5) → calculate → 25
+square(5) → calculate again → 25
+square(5) → calculate again → 25
+
+With memoization:
+
+square(5) → calculate → cache 25
+square(5) → return cached 25
+square(5) → return cached 25
+
+The computation happens only once.
+
+
+---
+
+Why Do We Need Memoization?
+
+Some operations are expensive:
+
+Complex mathematical calculations
+
+Recursive algorithms
+
+Large array filtering/sorting
+
+Data transformations
+
+React component computations
+
+
+Instead of repeating the same work, we store the result and reuse it.
+
+
+---
+
+How Memoization Works
+
+The process is:
+
+Function Call
+      ↓
+Check Cache
+      ↓
+Result Exists?
+   ↙        ↘
+ Yes         No
+ ↓            ↓
+Return     Calculate
+Cache         ↓
+             Store
+               ↓
+           Return
+
+
+---
+
+Example 1: Basic Memoization
+
+Normal function:
+
+function square(n) {
+  console.log("Calculating...");
+  return n * n;
+}
+
+square(5);
+square(5);
+
+Output:
+
+Calculating...
+Calculating...
+
+The calculation runs twice.
+
+
+---
+
+Memoized version:
+
+function memoizedSquare() {
+  const cache = {};
+
+  return function(n) {
+    if (cache[n]) {
+      console.log("From cache");
+      return cache[n];
+    }
+
+    console.log("Calculating");
+
+    const result = n * n;
+
+    cache[n] = result;
+
+    return result;
+  };
+}
+
+const square = memoizedSquare();
+
+square(5);
+square(5);
+
+Output:
+
+Calculating
+From cache
+
+The second call avoids recalculation.
+
+
+---
+
+Example 2: Fibonacci (Classic Example)
+
+Fibonacci:
+
+fib(5)
+=
+fib(4) + fib(3)
+
+Without memoization:
+
+function fib(n) {
+  if (n <= 1) return n;
+
+  return fib(n - 1) + fib(n - 2);
+}
+
+Calling:
+
+fib(40);
+
+can be very slow because many values are recomputed repeatedly.
+
+
+---
+
+Visualization:
+
+fib(5)
+├─ fib(4)
+│  ├─ fib(3)
+│  │  ├─ fib(2)
+│  │  └─ fib(1)
+│  └─ fib(2)
+└─ fib(3)
+   ├─ fib(2)
+   └─ fib(1)
+
+Notice:
+
+fib(3) repeated
+fib(2) repeated
+
+The same calculations happen many times.
+
+
+---
+
+Memoized Fibonacci:
+
+const cache = {};
+
+function fib(n) {
+  if (n in cache) {
+    return cache[n];
+  }
+
+  if (n <= 1) {
+    return n;
+  }
+
+  cache[n] =
+    fib(n - 1) +
+    fib(n - 2);
+
+  return cache[n];
+}
+
+Now:
+
+fib(40)
+
+becomes dramatically faster because each value is calculated only once.
+
+
+---
+
+Example 3: API Data Memoization
+
+Suppose you fetch user data.
+
+Without cache:
+
+async function getUser(id) {
+  const response =
+    await fetch(`/users/${id}`);
+
+  return response.json();
+}
+
+Calls:
+
+getUser(1);
+getUser(1);
+getUser(1);
+
+Result:
+
+3 API requests
+
+
+---
+
+Memoized version:
+
+const cache = {};
+
+async function getUser(id) {
+  if (cache[id]) {
+    return cache[id];
+  }
+
+  const response =
+    await fetch(`/users/${id}`);
+
+  const user =
+    await response.json();
+
+  cache[id] = user;
+
+  return user;
+}
+
+Now:
+
+getUser(1);
+getUser(1);
+getUser(1);
+
+Result:
+
+1 API request
+2 cache reads
+
+
+---
+
+Generic Memoize Function
+
+A reusable memoization utility:
+
+function memoize(fn) {
+  const cache = {};
+
+  return function (...args) {
+    const key =
+      JSON.stringify(args);
+
+    if (key in cache) {
+      return cache[key];
+    }
+
+    const result =
+      fn(...args);
+
+    cache[key] = result;
+
+    return result;
+  };
+}
+
+Usage:
+
+const add = memoize(
+  (a, b) => a + b
+);
+
+console.log(add(2, 3));
+console.log(add(2, 3));
+
+First call:
+
+Calculate
+
+Second call:
+
+Cache hit
+
+
+---
+
+Memoization in React
+
+React uses memoization extensively to improve rendering performance.
+
+useMemo
+
+Imagine filtering 10,000 users.
+
+Without memoization:
+
+const activeUsers =
+  users.filter(
+    user => user.active
+  );
+
+Every render executes the filter again.
+
+
+---
+
+Using useMemo:
+
+const activeUsers = useMemo(() => {
+  return users.filter(
+    user => user.active
+  );
+}, [users]);
+
+Flow:
+
+Render
+ ↓
+Did users change?
+ ↓
+No
+ ↓
+Use cached result
+
+Only recalculates when users changes.
+
+
+---
+
+React.memo
+
+Without:
+
+Parent renders
+↓
+Child renders
+
+every time.
+
+
+---
+
+With:
+
+const UserCard =
+  React.memo(function UserCard(props) {
+    return <div>{props.name}</div>;
+  });
+
+Flow:
+
+Parent renders
+↓
+Props unchanged
+↓
+Skip child render
+
+This is component-level memoization.
+
+
+---
+
+When Should You Use Memoization?
+
+Good candidates:
+
+Expensive Calculations
+
+calculateTax(data)
+generateReport(data)
+
+Large Array Operations
+
+users.filter(...)
+users.sort(...)
+users.reduce(...)
+
+Recursive Algorithms
+
+Fibonacci
+Tree traversal
+Graph search
+
+React Rendering Optimization
+
+useMemo
+useCallback
+React.memo
+
+
+---
+
+When NOT to Use Memoization
+
+Don't memoize trivial operations:
+
+a + b
+x * y
+
+Example:
+
+const result = useMemo(
+  () => a + b,
+  [a, b]
+);
+
+This usually adds unnecessary complexity because the calculation is already cheap.
+
+
+---
+
+Benefits
+
+Faster Execution
+
+Avoid repeated calculations.
+
+Reduced API Calls
+
+Reuse fetched data.
+
+Better UI Performance
+
+Fewer renders and computations.
+
+Improved User Experience
+
+Faster page interactions.
+
+
+---
+
+Drawbacks
+
+More Memory Usage
+
+Cached values consume RAM.
+
+1000 cached results
+↓
+More memory
+
+Stale Data
+
+Cached data may become outdated.
+
+Server updates
+↓
+Old cache remains
+
+Cache Management Complexity
+
+You may need:
+
+TTL (expiration)
+
+Cache invalidation
+
+Size limits
+
+
+
+---
+
+Memoization vs Caching
+
+Many developers use the terms interchangeably, but there is a subtle difference:
+
+Aspect	Memoization	Caching
+
+Purpose	Store function results	Store any data
+Scope	Usually function-level	Application-wide
+Key	Function arguments	Custom keys
+Example	fib(10) result	API response cache
+
+
+Example:
+
+memoize(square)
+
+is memoization.
+
+cache["user_1"] = user
+
+is general caching.
+
+Memoization is essentially a specialized form of caching focused on function outputs.
