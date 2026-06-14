@@ -1845,3 +1845,745 @@ localStorage → "Remember this setting forever."
 sessionStorage → "Remember this only while the tab is open."
 
 IndexedDB → "Store a large amount of structured data like a real database."
+
+
+Browser HTTP Cache and Service Worker Cache are often confused because both can return cached responses, but they work at different layers and give different levels of control.
+
+Think of the request flow like this:
+
+User Request
+     ↓
+Service Worker Cache (optional)
+     ↓
+Browser HTTP Cache
+     ↓
+Network
+     ↓
+Server
+
+
+---
+
+1. Browser HTTP Cache
+
+What is Browser HTTP Cache?
+
+Browser HTTP Cache is the browser's built-in caching mechanism that automatically stores network resources such as:
+
+HTML
+
+CSS
+
+JavaScript bundles
+
+Images
+
+Fonts
+
+API responses (if allowed)
+
+
+The browser decides whether to use the cached response based on HTTP headers sent by the server.
+
+
+---
+
+How Browser Cache Works
+
+Suppose a user visits a website.
+
+GET /app.js
+
+Server responds:
+
+HTTP/1.1 200 OK
+Cache-Control: max-age=3600
+
+Meaning:
+
+Cache this file for 1 hour
+
+The browser stores it.
+
+
+---
+
+First Visit
+
+Browser
+   ↓
+Request app.js
+   ↓
+Server
+   ↓
+Response + Cache-Control
+   ↓
+Browser stores response
+
+
+---
+
+Second Visit (within 1 hour)
+
+Browser
+   ↓
+Request app.js
+   ↓
+Found in cache
+   ↓
+Return cached copy
+
+No network request is made.
+
+
+---
+
+Important HTTP Cache Headers
+
+
+---
+
+Cache-Control
+
+Most important header.
+
+Example:
+
+Cache-Control: max-age=3600
+
+Meaning:
+
+Cache for 3600 seconds
+
+
+---
+
+Example Timeline
+
+12:00 Download file
+12:15 Use cache
+12:30 Use cache
+12:59 Use cache
+13:01 Cache expired
+
+At 13:01 browser contacts server again.
+
+
+---
+
+no-cache
+
+Cache-Control: no-cache
+
+This does NOT mean "don't cache".
+
+It means:
+
+Store in cache
+BUT
+Verify with server before use
+
+Flow:
+
+Browser
+ ↓
+Has cached copy
+ ↓
+Ask server:
+"Has file changed?"
+ ↓
+No
+ ↓
+Use cached version
+
+
+---
+
+no-store
+
+Cache-Control: no-store
+
+Means:
+
+Never store
+Never cache
+
+Used for:
+
+Banking pages
+
+Sensitive information
+
+Authentication flows
+
+
+
+---
+
+public
+
+Cache-Control: public
+
+Can be cached by:
+
+Browser
+
+CDN
+
+Proxy servers
+
+
+
+---
+
+private
+
+Cache-Control: private
+
+Only browser cache may store it.
+
+Useful for user-specific content.
+
+
+---
+
+ETag-Based Caching
+
+A server can attach an identifier:
+
+ETag: "v123"
+
+Browser stores:
+
+File + ETag
+
+Later:
+
+If-None-Match: "v123"
+
+Server checks.
+
+
+---
+
+File Unchanged
+
+Server replies:
+
+304 Not Modified
+
+No file transfer.
+
+Browser uses cached version.
+
+
+---
+
+Flow:
+
+Browser
+ ↓
+Do you still have v123?
+ ↓
+Server
+ ↓
+Yes
+ ↓
+304 Not Modified
+ ↓
+Use Cache
+
+Very bandwidth-efficient.
+
+
+---
+
+Browser Cache Example
+
+Suppose your website contains:
+
+main.js 500KB
+styles.css 100KB
+logo.png 50KB
+
+First visit:
+
+Download 650KB
+
+Second visit:
+
+Download 0KB
+
+Everything comes from cache.
+
+This is why websites load much faster after the first visit.
+
+
+---
+
+Problems with Browser Cache
+
+The browser controls most behavior.
+
+You cannot easily implement:
+
+Cache images for 30 days
+Cache API for 5 minutes
+Serve offline page
+Background updates
+
+This is where Service Workers help.
+
+
+---
+
+2. Service Worker Cache
+
+What is a Service Worker?
+
+A Service Worker is a JavaScript file that runs separately from the webpage and can intercept network requests.
+
+Think of it as a programmable network proxy inside the browser.
+
+Page
+ ↓
+Service Worker
+ ↓
+Network
+
+Unlike Browser Cache:
+
+Browser Cache = automatic
+Service Worker = programmable
+
+
+---
+
+Service Worker Lifecycle
+
+Install
+ ↓
+Activate
+ ↓
+Fetch Events
+
+
+---
+
+Registration
+
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register(
+    "/sw.js"
+  );
+}
+
+Browser installs:
+
+sw.js
+
+
+---
+
+Installation Phase
+
+Cache application assets.
+
+self.addEventListener(
+  "install",
+  event => {
+    event.waitUntil(
+      caches.open("v1").then(cache =>
+        cache.addAll([
+          "/",
+          "/index.html",
+          "/app.js",
+          "/styles.css"
+        ])
+      )
+    );
+  }
+);
+
+
+---
+
+Flow:
+
+Install Service Worker
+ ↓
+Download Files
+ ↓
+Store in Cache Storage
+
+
+---
+
+Fetch Event
+
+Intercept requests.
+
+self.addEventListener(
+  "fetch",
+  event => {
+    event.respondWith(
+      caches.match(event.request)
+    );
+  }
+);
+
+
+---
+
+Flow:
+
+Request app.js
+ ↓
+Service Worker
+ ↓
+Check Cache
+ ↓
+Return Cached File
+
+No network needed.
+
+
+---
+
+Cache Storage API
+
+Service Workers use a special storage called:
+
+Cache Storage
+
+Not the same as:
+
+Browser HTTP Cache
+
+You manage it manually.
+
+Example:
+
+const cache =
+  await caches.open("v1");
+
+Store:
+
+cache.put(request, response);
+
+Read:
+
+cache.match(request);
+
+Delete:
+
+caches.delete("v1");
+
+
+---
+
+Service Worker Caching Strategies
+
+These are the most important concepts.
+
+
+---
+
+Strategy 1: Cache First
+
+Most common for static assets.
+
+Flow:
+
+Cache
+ ↓
+Network
+
+Implementation:
+
+self.addEventListener(
+  "fetch",
+  event => {
+    event.respondWith(
+      caches.match(event.request)
+        .then(response => {
+          return response ||
+            fetch(event.request);
+        })
+    );
+  }
+);
+
+
+---
+
+Example
+
+Request:
+
+logo.png
+
+Cache contains file:
+
+Return immediately
+
+No network request.
+
+
+---
+
+Best for:
+
+Images
+Fonts
+JS bundles
+CSS
+
+
+---
+
+Strategy 2: Network First
+
+Try network first.
+
+Network
+ ↓
+Cache
+
+Example:
+
+fetch(request)
+  .catch(() =>
+    caches.match(request)
+  );
+
+
+---
+
+Flow:
+
+Request News Feed
+ ↓
+Network Available?
+ ↓
+Yes → Fresh Data
+No → Cached Data
+
+
+---
+
+Best for:
+
+News
+Dashboards
+Stock prices
+User data
+
+
+---
+
+Strategy 3: Stale-While-Revalidate
+
+Extremely popular.
+
+Used by many modern applications.
+
+Flow:
+
+Return Cached Copy
+        +
+Fetch Latest Copy
+In Background
+
+
+---
+
+Example
+
+Cache contains:
+
+Products List
+10:00 AM version
+
+At 10:10:
+
+Return 10:00 version immediately
+
+Meanwhile:
+
+Fetch latest version
+Update cache
+
+Next request receives updated data.
+
+
+---
+
+Visualization:
+
+Request
+ ↓
+Return Cache Immediately
+ ↓
+Background Network Request
+ ↓
+Update Cache
+
+Fast and fresh.
+
+
+---
+
+Best for:
+
+Product catalogs
+Blog posts
+Profile data
+
+
+---
+
+Strategy 4: Cache Only
+
+Only cache
+Never network
+
+Implementation:
+
+caches.match(request)
+
+Useful for:
+
+Offline resources
+
+
+---
+
+Strategy 5: Network Only
+
+Always fetch.
+
+fetch(request)
+
+No cache.
+
+Used for:
+
+Payments
+Authentication
+Sensitive operations
+
+
+---
+
+Offline Support
+
+One major advantage of Service Workers.
+
+Example:
+
+if (networkFails) {
+  return caches.match("/offline.html");
+}
+
+Flow:
+
+User Offline
+ ↓
+Request Page
+ ↓
+Show Offline Page
+
+A browser HTTP cache alone cannot provide this level of control.
+
+
+---
+
+Browser Cache vs Service Worker Cache
+
+Feature	Browser HTTP Cache	Service Worker Cache
+
+Controlled By	Server headers	JavaScript
+Setup Required	No	Yes
+Offline Support	Limited	Excellent
+Custom Strategies	No	Yes
+Background Updates	No	Yes
+Cache First	Automatic rules only	Fully configurable
+Network First	No	Yes
+Stale-While-Revalidate	Limited header support	Full control
+Intercept Requests	No	Yes
+Works Offline	Partially	Fully
+
+
+
+---
+
+Real-World Example: E-commerce Site
+
+A typical production setup might be:
+
+Browser HTTP Cache
+
+main.js
+styles.css
+fonts
+images
+
+Headers:
+
+Cache-Control: max-age=31536000
+
+Cache for 1 year.
+
+
+---
+
+Service Worker Cache
+
+Product API
+Cart API
+Offline page
+Product images
+
+Strategies:
+
+Images → Cache First
+
+Product Catalog → Stale While Revalidate
+
+Orders → Network First
+
+Payments → Network Only
+
+
+---
+
+Request Flow in a Modern PWA
+
+User Requests Product Page
+           ↓
+Service Worker
+           ↓
+Cache Available?
+       ↙        ↘
+     Yes         No
+      ↓           ↓
+Return Cache    Network
+      ↓           ↓
+Background      Save Cache
+Refresh
+
+This combination gives:
+
+Fast page loads
+
+Reduced bandwidth
+
+Offline support
+
+Better user experience
+
+Lower server load
+
+
+That's why modern Progressive Web Apps (PWAs) typically use both: browser HTTP caching for static assets and Service Worker caching for intelligent, application-controlled caching behavior.
