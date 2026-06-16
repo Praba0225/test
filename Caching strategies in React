@@ -1,0 +1,458 @@
+Caching in React can happen at multiple layers: component rendering, computed values, API requests, application state, browser storage, and network responses. Different strategies solve different performance problems.
+
+1. Component Memoization (React.memo)
+
+Purpose
+
+Prevents unnecessary re-renders of a component when its props haven't changed.
+
+How it works
+
+Step 1: Parent component renders.
+
+Step 2: React compares current props with previous props.
+
+Step 3: If props are unchanged, React skips rendering the child component.
+
+Step 4: Existing rendered output is reused.
+
+Example
+
+import React from "react";
+
+const UserCard = React.memo(({ name }) => {
+  console.log("Rendering UserCard");
+  return <div>{name}</div>;
+});
+
+export default UserCard;
+
+Use when
+
+Components render frequently.
+
+Props change rarely.
+
+Rendering is expensive.
+
+
+Benefits
+
+Reduces unnecessary rendering work.
+
+Improves UI responsiveness.
+
+
+
+---
+
+2. Function Memoization (useCallback)
+
+Purpose
+
+Caches function references between renders.
+
+Without caching, React creates a new function every render.
+
+How it works
+
+Step 1: Component renders.
+
+Step 2: React stores the callback.
+
+Step 3: On next render, dependencies are checked.
+
+Step 4: If dependencies haven't changed, same function reference is returned.
+
+Example
+
+const handleClick = useCallback(() => {
+  console.log("Clicked");
+}, []);
+
+Why important
+
+<Child onClick={handleClick} />
+
+Without useCallback, Child may re-render because onClick gets a new reference every render.
+
+Use when
+
+Passing callbacks to memoized children.
+
+Function creation causes unnecessary updates.
+
+
+
+---
+
+3. Value Memoization (useMemo)
+
+Purpose
+
+Caches expensive calculations.
+
+How it works
+
+Step 1: React executes calculation.
+
+Step 2: Stores result.
+
+Step 3: Dependency array is monitored.
+
+Step 4: If dependencies don't change, cached result is returned.
+
+Example
+
+const filteredUsers = useMemo(() => {
+  return users.filter(user => user.active);
+}, [users]);
+
+Without useMemo
+
+Filtering runs on every render.
+
+With useMemo
+
+Filtering runs only when users changes.
+
+Use when
+
+Sorting large lists.
+
+Data transformations.
+
+Complex calculations.
+
+
+
+---
+
+4. API Response Caching with React Query (TanStack Query)
+
+Purpose
+
+Caches server responses automatically.
+
+How it works
+
+Step 1: Component requests data.
+
+const { data } = useQuery({
+  queryKey: ["users"],
+  queryFn: fetchUsers
+});
+
+Step 2: Query fetches data from server.
+
+Step 3: Response is stored in cache.
+
+Step 4: Other components requesting the same query receive cached data.
+
+Step 5: Background refetch updates cache when needed.
+
+Cache Lifecycle
+
+Server
+   ↓
+React Query Fetch
+   ↓
+Cache Store
+   ↓
+Multiple Components
+
+Benefits
+
+Automatic caching
+
+Deduplication
+
+Background refresh
+
+Cache invalidation
+
+
+
+---
+
+5. SWR Cache Strategy
+
+Purpose
+
+Implements the "Stale While Revalidate" pattern.
+
+Popular library: [SWR](https://swr.vercel.app?utm_source=chatgpt.com)
+
+How it works
+
+Step 1: Check cache.
+
+Step 2: If cached data exists, display immediately.
+
+Step 3: Fetch fresh data in background.
+
+Step 4: Update UI when new data arrives.
+
+Example
+
+const { data } = useSWR(
+  "/api/users",
+  fetcher
+);
+
+Flow
+
+Cached Data
+     ↓
+Show Immediately
+     ↓
+Background Fetch
+     ↓
+Update Cache
+     ↓
+Re-render UI
+
+Benefit
+
+Users see data instantly while still receiving fresh updates.
+
+
+---
+
+6. Global State Caching
+
+Purpose
+
+Store data centrally so multiple components reuse it.
+
+Libraries:
+
+[Redux Toolkit](https://redux-toolkit.js.org?utm_source=chatgpt.com)
+
+[Zustand](https://zustand-demo.pmnd.rs?utm_source=chatgpt.com)
+
+React Context
+
+
+How it works
+
+Step 1: Fetch data once.
+
+Step 2: Store in global state.
+
+Step 3: Components read shared state.
+
+Step 4: Avoid duplicate API calls.
+
+Example
+
+const useUserStore = create((set) => ({
+  users: [],
+  setUsers: (users) => set({ users })
+}));
+
+
+---
+
+7. Browser Storage Caching
+
+Purpose
+
+Persist data across page reloads.
+
+Options
+
+Storage	Lifetime
+
+localStorage	Permanent
+sessionStorage	Browser tab session
+IndexedDB	Large datasets
+
+
+Example
+
+Store
+
+localStorage.setItem(
+  "users",
+  JSON.stringify(users)
+);
+
+Retrieve
+
+const users = JSON.parse(
+  localStorage.getItem("users")
+);
+
+Flow
+
+API Response
+     ↓
+localStorage
+     ↓
+Page Refresh
+     ↓
+Load Cached Data
+
+Use when
+
+User preferences
+
+Theme settings
+
+Offline support
+
+
+
+---
+
+8. Service Worker Caching (PWA)
+
+Purpose
+
+Cache network resources for offline access.
+
+Typically implemented with:
+
+[Workbox](https://developer.chrome.com/docs/workbox?utm_source=chatgpt.com)
+
+
+How it works
+
+Step 1: User visits site.
+
+Step 2: Service worker installs.
+
+Step 3: Static assets are cached.
+
+Step 4: Future requests are served from cache.
+
+Example Flow
+
+First Visit
+    ↓
+Cache JS/CSS/Images
+    ↓
+Next Visit
+    ↓
+Serve from Cache
+
+Benefits
+
+Faster load times
+
+Offline support
+
+Reduced server traffic
+
+
+
+---
+
+9. HTTP Cache
+
+Purpose
+
+Use browser caching via server headers.
+
+Common Headers
+
+Cache-Control: max-age=3600
+ETag: "abc123"
+Last-Modified: Tue, 16 Jun 2026 10:00:00 GMT
+
+How it works
+
+Step 1: Browser downloads resource.
+
+Step 2: Browser stores it.
+
+Step 3: Next request checks cache validity.
+
+Step 4: Browser reuses cached response if valid.
+
+Types
+
+Strong caching
+
+Conditional caching
+
+CDN caching
+
+
+Benefits
+
+Faster page loads
+
+Less network traffic
+
+
+
+---
+
+10. Lazy Loading + Code Splitting Cache
+
+Purpose
+
+Load JavaScript only when needed and cache downloaded chunks.
+
+Example
+
+const Dashboard = React.lazy(() =>
+  import("./Dashboard")
+);
+
+How it works
+
+Step 1: Initial bundle loads.
+
+Step 2: User navigates to Dashboard.
+
+Step 3: Chunk downloads.
+
+Step 4: Browser caches chunk.
+
+Step 5: Future visits use cached chunk.
+
+Benefits
+
+Smaller initial bundle
+
+Faster startup
+
+Better caching efficiency
+
+
+
+---
+
+Which Strategy Should You Use?
+
+Problem	Recommended Cache Strategy
+
+Expensive calculations	useMemo
+Stable function references	useCallback
+Prevent child re-renders	React.memo
+API data caching	TanStack Query / SWR
+Share data across components	Redux / Zustand / Context
+Persist data after refresh	localStorage / IndexedDB
+Offline support	Service Worker
+Static assets	HTTP Cache
+Large bundles	Lazy Loading + Code Splitting
+
+
+Typical Production Setup
+
+A modern React application often combines several caching layers:
+
+HTTP Cache
+    ↓
+Service Worker Cache
+    ↓
+React Query Cache
+    ↓
+Redux/Zustand Store
+    ↓
+useMemo / useCallback / React.memo
+
+Each layer solves a different bottleneck, giving both faster network performance and faster rendering performance.
