@@ -586,6 +586,69 @@ Interview Answer
 <button> is generally preferred because it supports richer content and is more flexible for styling and accessibility when used correctly.
 
 
+Extra:::::
+Yes, but there's an important difference in React.
+
+For form elements like <input>, <select>, and <textarea>, you usually use onChange.
+
+Input
+
+function App() {
+  const handleChange = (e) => {
+    console.log(e.target.value);
+  };
+
+  return <input type="text" onChange={handleChange} />;
+}
+
+Select
+
+function App() {
+  const handleSelect = (e) => {
+    console.log(e.target.value);
+  };
+
+  return (
+    <select onChange={handleSelect}>
+      <option>HTML</option>
+      <option>CSS</option>
+      <option>React</option>
+    </select>
+  );
+}
+
+Checkbox
+
+<input
+  type="checkbox"
+  onChange={(e) => console.log(e.target.checked)}
+/>
+
+Radio
+
+<input
+  type="radio"
+  name="gender"
+  value="Male"
+  onChange={(e) => console.log(e.target.value)}
+/>
+
+onSelect in React
+
+onSelect is not used for dropdown (<select>) elements. It is triggered when the user selects (highlights) text inside an <input> or <textarea>.
+
+<input
+  type="text"
+  onSelect={() => console.log("Text selected")}
+/>
+
+Remember:
+
+✅ onChange → Use for <input>, <select>, <textarea>, checkbox, and radio.
+
+✅ onSelect → Use when detecting text selection, not dropdown selection.
+
+
 ---
 
 Frequently Asked Form Interview Questions
